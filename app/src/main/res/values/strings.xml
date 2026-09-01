@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Nabiji</string>
+    <string name="steps_widget_description">Steps today and progress toward your goal</string>
 </resources>
