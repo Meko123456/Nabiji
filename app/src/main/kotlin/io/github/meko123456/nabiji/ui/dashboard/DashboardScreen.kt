@@ -98,8 +98,11 @@ fun DashboardScreen() {
                 )
                 is DashboardState.NoData -> Explain(
                     title = "No activity recorded yet",
-                    body = "Health Connect has nothing for the last year. Once your phone or watch records " +
-                        "some steps they'll show up here.",
+                    body = "Health Connect has no steps for the last year. That usually means the app that " +
+                        "tracks your steps — Samsung Health, Fitbit, Google Fit — isn't set to share them " +
+                        "with Health Connect yet. Open that app's Health Connect settings and allow it to " +
+                        "write steps.\n\nOn Android 14 and newer, Health Connect can also count steps on its " +
+                        "own now that Nabiji has permission, so data may start appearing as you walk.",
                     action = "Check again" to vm::refresh,
                 )
                 is DashboardState.Failed -> Explain(
