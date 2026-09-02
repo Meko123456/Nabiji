@@ -25,6 +25,12 @@ jobs:
       - name: Build, lint and unit tests
         run: ./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest --stacktrace
 
+      # R8 and resource shrinking only run for release, so a debug-only CI lets the release build
+      # rot until the day you try to ship. Health Connect and Glance both reach for classes
+      # reflectively, which is exactly what a shrinker removes.
+      - name: Release build (R8 + resource shrinking)
+        run: ./gradlew :app:assembleRelease :app:lintVitalRelease --stacktrace
+
       - name: Upload lint report
         if: failure()
         uses: actions/upload-artifact@v7

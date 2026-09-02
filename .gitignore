@@ -16,3 +16,6 @@ build/
 # Release artefacts built locally
 /*.apk
 /*.idsig
+
+# Release signing (never commit real credentials)
+keystore.properties

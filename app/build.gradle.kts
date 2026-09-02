@@ -1,7 +1,25 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
 }
+
+// Release signing comes from keystore.properties (git-ignored) or, failing that, the
+// NABIJI_KEYSTORE_* environment variables. With neither, the release build is simply left
+// unsigned, so `assembleRelease` still works on a fresh checkout and in CI.
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun signingValue(key: String, env: String): String? =
+    keystoreProps.getProperty(key) ?: System.getenv(env)
+val releaseStoreFile = signingValue("storeFile", "NABIJI_KEYSTORE_STORE_FILE")
+val releaseStorePassword = signingValue("storePassword", "NABIJI_KEYSTORE_STORE_PASSWORD")
+val releaseKeyAlias = signingValue("keyAlias", "NABIJI_KEYSTORE_KEY_ALIAS")
+val releaseKeyPassword = signingValue("keyPassword", "NABIJI_KEYSTORE_KEY_PASSWORD")
+val hasReleaseSigning =
+    releaseStoreFile != null && releaseStorePassword != null && releaseKeyAlias != null && releaseKeyPassword != null
 
 android {
     namespace = "io.github.meko123456.nabiji"
@@ -17,11 +35,24 @@ android {
         versionName = "0.1.0-dev"
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Signed only when credentials are supplied; otherwise an unsigned APK.
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
