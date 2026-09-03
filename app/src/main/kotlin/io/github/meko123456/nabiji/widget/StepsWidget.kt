@@ -6,6 +6,8 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.semantics.semantics
+import androidx.glance.semantics.contentDescription
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -63,7 +65,10 @@ class StepsWidget : GlanceAppWidget() {
                 .fillMaxSize()
                 .background(GlanceTheme.colors.widgetBackground)
                 .padding(12.dp)
-                .clickable(actionStartActivity<MainActivity>()),
+                .clickable(actionStartActivity<MainActivity>())
+                // The whole widget is one tap target, and without this a screen reader announces
+                // the step count and then offers no clue that touching it does anything.
+                .semantics { contentDescription = "Nabiji: open the app" },
             verticalAlignment = Alignment.Vertical.CenterVertically,
             horizontalAlignment = Alignment.Horizontal.Start,
         ) {
