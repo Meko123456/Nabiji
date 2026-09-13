@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **ნაბიჯი** (*nabiji* — Georgian for "step") — a quiet daily activity dashboard built on
-**Health Connect**: today's steps against your goal, a year of activity as a heatmap, your
+**Health Connect**: today's steps against your goal, the last 26 weeks of activity as a heatmap, your
 goal streak, and a home-screen widget. No account, no cloud, no step-counting of its own —
 it reads what your phone and watch already record.
 
@@ -19,13 +19,13 @@ It is also the second consumer of my published
 [`heatmap`](https://github.com/Meko123456/heatmap-compose) library, which draws the year of
 daily activity.
 
-## Features (planned — see the [issues](https://github.com/Meko123456/Nabiji/issues))
+## Features
 
 - 👣 **Today** — steps, distance and active calories against a goal you set, with a progress ring.
 - 🔥 **Goal streak** — consecutive days you hit the target. A goal not yet met *today* doesn't
   wipe the streak; it is measured to yesterday until the day is done.
-- 🟩 **Activity heatmap** — a year of daily steps drawn with the `heatmap` library.
-- 📊 **Week & month** — totals, daily average, best day, and how many days met the goal.
+- 🟩 **Activity heatmap** — the last 26 weeks of daily steps, drawn with the `heatmap` library.
+- 📊 **This week** — total, daily average, best day, and how many of the seven days met the goal.
 - 📱 **Glance widget** — today's steps and ring on the home screen.
 - 🔐 **Permission-first** — reads nothing until you grant it in Health Connect, and degrades to a
   clear explanation when Health Connect is unavailable or permissions are refused.
@@ -58,7 +58,7 @@ every number on the dashboard — streaks, averages, progress — is testable wi
 ./gradlew :app:assembleDebug :app:testDebugUnitTest
 ```
 
-Kotlin 2.3, AGP 9, Compose BOM 2026.06, minSdk 26, Health Connect client 1.1, Glance 1.1.
+Kotlin 2.4.10, AGP 9.1.1, Gradle 9.7.1, Compose BOM 2026.06, minSdk 26, Health Connect client 1.1, Glance 1.1.
 
 ## License
 
