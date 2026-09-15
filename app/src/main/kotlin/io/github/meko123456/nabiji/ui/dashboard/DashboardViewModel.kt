@@ -9,6 +9,7 @@ import io.github.meko123456.nabiji.domain.DayActivity
 import io.github.meko123456.nabiji.domain.HealthAvailability
 import io.github.meko123456.nabiji.domain.StepGoal
 import java.time.LocalDate
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -56,12 +57,20 @@ class DashboardViewModel(
     private val _state = MutableStateFlow<DashboardState>(DashboardState.Loading)
     val state: StateFlow<DashboardState> = _state.asStateFlow()
 
+    private var refreshJob: Job? = null
+    private var goalWriteJob: Job? = null
+
     init {
         refresh()
     }
 
     fun refresh() {
-        viewModelScope.launch {
+        // One load at a time. Overlapping refreshes do not merely waste a year-long Health Connect
+        // query each; they race, and the one that finishes last wins rather than the one that
+        // started last — so a late arrival could drop a stale dashboard over a fresh one, or put
+        // the screen back into Loading after it had already rendered.
+        refreshJob?.cancel()
+        refreshJob = viewModelScope.launch {
             _state.update { DashboardState.Loading }
             val availability = source.availability()
             if (availability != HealthAvailability.AVAILABLE) {
@@ -83,11 +92,35 @@ class DashboardViewModel(
         }
     }
 
+    /**
+     * Change the daily goal.
+     *
+     * Deliberately does not reload. The goal changes what the activity *means* — the streak, the
+     * days met — not the activity itself, and every number that depends on it is derived by the
+     * pure domain from days already in hand. Reloading re-read a year of Health Connect to arrive
+     * at data identical to what was on screen.
+     *
+     * That mattered because the caller is a slider. Dragging it end to end fired ~29 of these, each
+     * launching its own 365-day query and its own store write, all in flight together and none
+     * cancelling the last. Whichever query happened to finish last decided the goal on screen, so
+     * the dashboard could settle on a value the user had already dragged past.
+     *
+     * The state moves first and the write follows, so the screen answers the drag immediately. If
+     * the write were ever to fail the next [refresh] reads the stored value back and corrects it.
+     */
     fun setGoal(steps: Int) {
-        viewModelScope.launch {
-            goals.setGoal(StepGoal.clamped(steps))
-            refresh()
-        }
+        val goal = StepGoal.clamped(steps)
+        _state.update { it.withGoal(goal) }
+        // Supersede rather than queue: only the value the user settled on needs to reach the store.
+        goalWriteJob?.cancel()
+        goalWriteJob = viewModelScope.launch { goals.setGoal(goal) }
+    }
+
+    /** Re-derive the goal-dependent numbers from the days already loaded. */
+    private fun DashboardState.withGoal(goal: StepGoal): DashboardState = when (this) {
+        is DashboardState.Ready -> buildReady(days, goal, today())
+        is DashboardState.NoData -> DashboardState.NoData(goal)
+        else -> this
     }
 
     private fun buildReady(days: List<DayActivity>, goal: StepGoal, end: LocalDate): DashboardState {
