@@ -23,6 +23,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -232,18 +235,28 @@ private fun HeatmapCard(days: List<DayActivity>, goal: StepGoal) {
 
 @Composable
 private fun GoalCard(goal: StepGoal, onGoal: (Int) -> Unit) {
+    // Where the thumb is right now, which is not the same thing as the goal that has been agreed.
+    // Driving the slider straight off the committed goal meant every position a finger passed
+    // through was committed: a single drag across the track raised ~29 separate goal changes.
+    // Keyed on the goal so a change from anywhere else still moves the thumb.
+    var position by remember(goal) { mutableFloatStateOf(goal.steps.toFloat()) }
+    val shown = StepGoal.clamped(position.toInt())
+
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Daily goal", style = MaterialTheme.typography.titleSmall)
-            Text("${goal.steps} steps", style = MaterialTheme.typography.bodyMedium)
+            // The label follows the finger, so the drag still reads as live even though only the
+            // value it lands on is committed.
+            Text("${shown.steps} steps", style = MaterialTheme.typography.bodyMedium)
             Slider(
-                value = goal.steps.toFloat(),
-                onValueChange = { onGoal(it.toInt()) },
+                value = position,
+                onValueChange = { position = it },
+                onValueChangeFinished = { onGoal(position.toInt()) },
                 valueRange = StepGoal.MIN.toFloat()..StepGoal.MAX.toFloat(),
                 steps = 28,
                 modifier = Modifier.semantics {
                     contentDescription = "Daily step goal"
-                    stateDescription = "${goal.steps} steps"
+                    stateDescription = "${shown.steps} steps"
                 },
             )
         }
