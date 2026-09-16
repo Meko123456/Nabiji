@@ -60,6 +60,25 @@ every number on the dashboard — streaks, averages, progress — is testable wi
 
 Kotlin 2.4.10, AGP 9.1.1, Gradle 9.7.1, Compose BOM 2026.06, minSdk 26, Health Connect client 1.1, Glance 1.1.
 
+## Building a release
+
+The release build is minified and resource-shrunk by R8. Health Connect and Glance both resolve
+classes reflectively, so it is the only build where stripping can break the app — CI therefore
+runs `:app:assembleRelease` and `:app:lintVitalRelease` on every push rather than debug alone.
+No app-specific keep rules are needed; the libraries' own consumer rules cover it.
+
+For a **signed** APK, copy `keystore.properties.example` to `keystore.properties` (git-ignored)
+and point it at your keystore, or set the `NABIJI_KEYSTORE_*` environment variables. With
+neither present the release build still compiles — it just produces an unsigned APK, so a fresh
+checkout and CI both keep working.
+
+Releases are cut by tag: pushing `v0.1.0` runs `.github/workflows/release.yml`, which derives
+`versionName` and `versionCode` from the tag, builds and signs the APK, refuses to continue if
+it came out unsigned or unaligned, keeps the R8 `mapping.txt` for 90 days, and attaches the APK
+to a GitHub release. `workflow_dispatch` does the same as a dry run without publishing anything.
+It needs four repository secrets: `NABIJI_KEYSTORE_BASE64`, `NABIJI_KEYSTORE_STORE_PASSWORD`,
+`NABIJI_KEYSTORE_KEY_ALIAS` and `NABIJI_KEYSTORE_KEY_PASSWORD`.
+
 ## License
 
 [MIT](LICENSE) © 2026 Merab Kochlamazashvili
