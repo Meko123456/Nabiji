@@ -31,8 +31,10 @@ android {
         // app, so 26 keeps the door open while the UI degrades to an "unavailable" state.
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0-dev"
+        // A release takes its identity from the git tag, which .github/workflows/release.yml
+        // turns into -PversionCode / -PversionName. These are only the local fallback.
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
+        versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
     }
 
     signingConfigs {
