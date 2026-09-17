@@ -23,7 +23,7 @@ val hasReleaseSigning =
 
 android {
     namespace = "io.github.meko123456.nabiji"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "io.github.meko123456.nabiji"
