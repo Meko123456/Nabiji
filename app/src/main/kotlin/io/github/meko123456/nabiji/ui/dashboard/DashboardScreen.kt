@@ -1,7 +1,6 @@
 package io.github.meko123456.nabiji.ui.dashboard
 
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +45,7 @@ import io.github.meko123456.nabiji.domain.ActivitySummary
 import io.github.meko123456.nabiji.domain.DayActivity
 import io.github.meko123456.nabiji.domain.HealthAvailability
 import io.github.meko123456.nabiji.domain.StepGoal
+import io.github.meko123456.nabiji.ui.theme.isDark
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -226,7 +226,9 @@ private fun HeatmapCard(days: List<DayActivity>, goal: StepGoal) {
                 // Absolute scale: the goal is the darkest level, so shading means the same
                 // thing every week instead of drifting with the busiest day on screen.
                 maxCount = goal.steps,
-                levelColors = if (isSystemInDarkTheme()) GithubGreens else GithubLightGreens,
+                // Which greens suit the card depends on the theme actually in use, which is
+                // not necessarily the system setting.
+                levelColors = if (MaterialTheme.colorScheme.isDark) GithubGreens else GithubLightGreens,
                 contentDescription = "Activity heatmap: $active of the last 182 days with recorded steps",
             )
         }
