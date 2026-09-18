@@ -9,13 +9,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -28,12 +28,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,6 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.meko123456.heatmap.ContributionHeatmap
 import io.github.meko123456.heatmap.GithubGreens
 import io.github.meko123456.heatmap.GithubLightGreens
+import io.github.meko123456.heatmap.HeatmapLayout
 import io.github.meko123456.nabiji.data.GoalRepository
 import io.github.meko123456.nabiji.data.HealthConnectSource
 import io.github.meko123456.nabiji.domain.ActivitySummary
@@ -49,6 +52,9 @@ import io.github.meko123456.nabiji.domain.HealthAvailability
 import io.github.meko123456.nabiji.domain.StepGoal
 import io.github.meko123456.nabiji.ui.theme.isDark
 import java.time.LocalDate
+
+/** Weeks the heatmap draws. Everything said *about* the heatmap has to agree with this. */
+private const val HEATMAP_WEEKS = 26
 
 /**
  * The smallest a thing you touch is allowed to be.
@@ -137,10 +143,24 @@ fun DashboardScreen() {
     }
 }
 
+/** A card's title, announced as a heading so a screen reader can jump between the cards. */
+@Composable
+private fun SectionTitle(
+    text: String,
+    style: TextStyle = MaterialTheme.typography.titleSmall,
+    color: Color = Color.Unspecified,
+) {
+    Text(text, style = style, color = color, modifier = Modifier.semantics { heading() })
+}
+
 @Composable
 private fun Loading() {
     Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
+        // A bare spinner is silent to a screen reader: it reports a busy indicator with nothing
+        // to say what is being waited on.
+        CircularProgressIndicator(
+            Modifier.semantics { contentDescription = "Reading your activity from Health Connect" },
+        )
     }
 }
 
@@ -149,7 +169,7 @@ private fun Loading() {
 private fun Explain(title: String, body: String, action: Pair<String, () -> Unit>? = null) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            SectionTitle(title, style = MaterialTheme.typography.titleMedium)
             Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             action?.let { (label, onClick) ->
                 Button(
@@ -173,22 +193,35 @@ private fun Ready(state: DashboardState.Ready, onGoal: (Int) -> Unit) {
 private fun TodayCard(state: DashboardState.Ready) {
     val steps = state.today.steps
     val goal = state.goal
-    val spoken = "Today: ${steps} steps, ${goal.percent(steps)} percent of your ${goal.steps} step goal" +
-        if (state.streak > 0) ", ${state.streak} day streak" else ""
+    val remaining = goal.remaining(steps)
+    // The card is read out as one sentence, so the sentence has to carry everything the card
+    // shows. It used to stop after the streak, which quietly hid the distance, the calories and
+    // how far there was left to go from anyone listening rather than looking.
+    val spoken = buildList {
+        add("Today: $steps steps, ${goal.percent(steps)} percent of your ${goal.steps} step goal")
+        add(if (remaining == 0L) "goal met" else "$remaining steps to go")
+        if (state.streak > 0) add("${state.streak} day streak")
+        state.today.distanceMeters?.let { add("%.2f kilometres".format(it / 1000)) }
+        state.today.activeKilocalories?.let { add("${it.toInt()} kilocalories") }
+    }.joinToString(", ")
+
     Card(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = spoken }) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Today", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            SectionTitle(
+                "Today",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
             Text("$steps", style = MaterialTheme.typography.displayMedium)
             Text(
                 "of ${goal.steps} steps · ${goal.percent(steps)}%",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            androidx.compose.material3.LinearProgressIndicator(
+            LinearProgressIndicator(
                 progress = { goal.progress(steps) },
                 modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
             )
-            val remaining = goal.remaining(steps)
             Text(
                 if (remaining == 0L) "Goal met 🎉" else "$remaining to go",
                 style = MaterialTheme.typography.bodySmall,
@@ -210,7 +243,7 @@ private fun TodayCard(state: DashboardState.Ready) {
 private fun StatsCard(state: DashboardState.Ready) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("This week", style = MaterialTheme.typography.titleSmall)
+            SectionTitle("This week")
             // Four figures pinned into one Row fitted at the default text size and nothing
             // larger: at 200 % they were squeezed together until "Goal days" broke across two
             // lines and left its own number behind on the line above. Letting them flow onto a
@@ -244,21 +277,44 @@ private fun Stat(label: String, value: String) {
 @Composable
 private fun HeatmapCard(days: List<DayActivity>, goal: StepGoal) {
     val counts = ActivitySummary.heatmapCounts(days)
-    val active = counts.size
+    val endDay = LocalDate.now().toEpochDay()
+    // The dashboard loads a year but the grid only draws 26 weeks of it, so everything said
+    // about the grid has to be counted over the window it actually draws. Counting the whole
+    // year against a 182-day window is how the old description came to claim "295 of the last
+    // 182 days" — a sentence that cannot be true, read out to the people who cannot see the
+    // grid and check.
+    val firstDay = HeatmapLayout.firstDay(endDay, HEATMAP_WEEKS)
+    val shownDays = HeatmapLayout.daysShown(endDay, HEATMAP_WEEKS)
+    val active = HeatmapLayout.daysWithin(counts.keys, endDay, HEATMAP_WEEKS)
+    val met = days.count { it.date.toEpochDay() >= firstDay && goal.isMet(it.steps) }
+
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Last 26 weeks", style = MaterialTheme.typography.titleSmall)
+            SectionTitle("Last 26 weeks")
             ContributionHeatmap(
                 counts = counts,
-                endDay = LocalDate.now().toEpochDay(),
-                weeks = 26,
+                endDay = endDay,
+                weeks = HEATMAP_WEEKS,
                 // Absolute scale: the goal is the darkest level, so shading means the same
                 // thing every week instead of drifting with the busiest day on screen.
                 maxCount = goal.steps,
                 // Which greens suit the card depends on the theme actually in use, which is
                 // not necessarily the system setting.
                 levelColors = if (MaterialTheme.colorScheme.isDark) GithubGreens else GithubLightGreens,
-                contentDescription = "Activity heatmap: $active of the last 182 days with recorded steps",
+                contentDescription = "Activity heatmap: $active of the last $shownDays days have " +
+                    "recorded steps, and $met of them met the ${goal.steps} step goal",
+            )
+            // Depth of green is the only thing the grid says, and depth of green is the one
+            // thing a red-green colour-blind reader cannot get back out of it. Say it in words
+            // as well, so the grid is a nicety rather than the only copy of the answer.
+            Text(
+                "Each square is a day; the darker it is, the closer that day came to the goal.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                "$active of the last $shownDays days have steps · $met met the ${goal.steps} goal",
+                style = MaterialTheme.typography.bodySmall,
             )
         }
     }
@@ -275,7 +331,7 @@ private fun GoalCard(goal: StepGoal, onGoal: (Int) -> Unit) {
 
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Daily goal", style = MaterialTheme.typography.titleSmall)
+            SectionTitle("Daily goal")
             // The label follows the finger, so the drag still reads as live even though only the
             // value it lands on is committed.
             Text("${shown.steps} steps", style = MaterialTheme.typography.bodyMedium)
