@@ -1,0 +1,5 @@
+<resources>
+    <!-- Close to the surface Material 3 settles on, so the hand-off from the launch window to
+         the first composed frame is not a visible step. -->
+    <color name="window_background">#FAF8FE</color>
+</resources>

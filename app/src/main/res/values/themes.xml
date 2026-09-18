@@ -1,3 +1,10 @@
 <resources>
-    <style name="Theme.Nabiji" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        The window Android paints for itself, before Compose has drawn a single frame: the
+        launch window, and whatever shows through behind the app. Compose's colours never reach
+        it, so it has to be told about dark mode separately — see values-night.
+    -->
+    <style name="Theme.Nabiji" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
 </resources>
