@@ -19,18 +19,32 @@ It is also the second consumer of my published
 [`heatmap`](https://github.com/Meko123456/heatmap-compose) library, which draws the year of
 daily activity.
 
+## Screenshots
+
+| Permission-first | Nothing recorded yet | The same, dark |
+| --- | --- | --- |
+| ![Nabiji asking to be allowed to read steps in Health Connect](docs/screenshots/permission.png) | ![Nabiji explaining that Health Connect holds no steps for the last year](docs/screenshots/empty-light.png) | ![The same screen rendered in dark mode](docs/screenshots/empty-dark.png) |
+
+These are from an Android 17 (API 37) emulator whose Health Connect is empty, so they
+are the app with nothing to show rather than a dashboard filled in for the photograph:
+it asks for permission, and then says plainly what it found. The populated dashboard —
+the progress bar, the streak, the 26-week heatmap — needs a phone with Samsung Health
+sharing into Health Connect, and is still to come.
+
 ## Features
 
-- 👣 **Today** — steps, distance and active calories against a goal you set, with a progress ring.
+- 👣 **Today** — steps, distance and active calories against a goal you set, with a progress bar.
 - 🔥 **Goal streak** — consecutive days you hit the target. A goal not yet met *today* doesn't
   wipe the streak; it is measured to yesterday until the day is done.
 - 🟩 **Activity heatmap** — the last 26 weeks of daily steps, drawn with the `heatmap` library.
 - 📊 **This week** — total, daily average, best day, and how many of the seven days met the goal.
-- 📱 **Glance widget** — today's steps and ring on the home screen.
+- 📱 **Glance widget** — today's steps and progress on the home screen.
 - 🔐 **Permission-first** — reads nothing until you grant it in Health Connect, and degrades to a
   clear explanation when Health Connect is unavailable or permissions are refused.
 - 🔒 **Private** — data never leaves the device; the app has no network permission at all.
 - 🎨 **Material 3** — dynamic color, light/dark, edge-to-edge.
+- ♿ **Readable** — every control labelled and no smaller than 48dp, text that scales to
+  200 % without losing a number, and nothing the app says only in colour.
 
 ## Architecture
 
