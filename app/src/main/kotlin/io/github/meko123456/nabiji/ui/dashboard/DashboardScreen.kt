@@ -4,9 +4,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -28,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -48,6 +50,15 @@ import io.github.meko123456.nabiji.domain.StepGoal
 import io.github.meko123456.nabiji.ui.theme.isDark
 import java.time.LocalDate
 
+/**
+ * The smallest a thing you touch is allowed to be.
+ *
+ * Material is inconsistent about this. Slider quietly expands its own touch target past the
+ * 44dp it draws, so it needs nothing; Button does not, and stops at the 40dp it draws. Only
+ * the ones Material leaves short are given this.
+ */
+private val MinTouchTarget = 48.dp
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen() {
@@ -62,14 +73,21 @@ fun DashboardScreen() {
         contract = PermissionController.createRequestPermissionResultContract(),
     ) { vm.refresh() }
 
+    // The bar holds two stacked lines of text and nothing else, so its height is the height of
+    // that text. Left at Material's fixed 64dp, a reader at 200 % font size had the Georgian
+    // line pushed out of the bar and up under the status-bar clock.
+    val fontScale = LocalDensity.current.fontScale
     Scaffold(
         topBar = {
-            TopAppBar(title = {
-                Column {
-                    Text("Nabiji", style = MaterialTheme.typography.titleLarge)
-                    Text("ნაბიჯი", style = MaterialTheme.typography.labelMedium)
-                }
-            })
+            TopAppBar(
+                title = {
+                    Column {
+                        Text("Nabiji", style = MaterialTheme.typography.titleLarge)
+                        Text("ნაბიჯი", style = MaterialTheme.typography.labelMedium)
+                    }
+                },
+                expandedHeight = 64.dp * fontScale.coerceIn(1f, 2f),
+            )
         },
     ) { padding ->
         Column(
@@ -134,7 +152,10 @@ private fun Explain(title: String, body: String, action: Pair<String, () -> Unit
             Text(title, style = MaterialTheme.typography.titleMedium)
             Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             action?.let { (label, onClick) ->
-                Button(onClick = onClick, modifier = Modifier.padding(top = 4.dp)) { Text(label) }
+                Button(
+                    onClick = onClick,
+                    modifier = Modifier.padding(top = 4.dp).heightIn(min = MinTouchTarget),
+                ) { Text(label) }
             }
         }
     }
@@ -188,9 +209,17 @@ private fun TodayCard(state: DashboardState.Ready) {
 @Composable
 private fun StatsCard(state: DashboardState.Ready) {
     Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("This week", style = MaterialTheme.typography.titleSmall)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            // Four figures pinned into one Row fitted at the default text size and nothing
+            // larger: at 200 % they were squeezed together until "Goal days" broke across two
+            // lines and left its own number behind on the line above. Letting them flow onto a
+            // second line keeps every figure next to its label however big the text gets.
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 Stat("Total", "${state.weekTotal}")
                 Stat("Average", "${state.weekAverage}")
                 Stat("Best", "${state.bestDay?.steps ?: 0}")
