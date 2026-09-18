@@ -60,29 +60,42 @@ class StepsWidget : GlanceAppWidget() {
 
     @androidx.compose.runtime.Composable
     private fun WidgetBody(steps: Long?, goal: StepGoal) {
+        // A description on the container is what a screen reader reads *instead of* the children,
+        // so it has to carry the numbers as well as the fact that the widget is a button. The
+        // first attempt at labelling the tap target said only "Nabiji: open the app", which
+        // bought the label at the cost of the step count it was wrapped around.
+        val spoken = if (steps == null) {
+            "Nabiji: not connected to Health Connect yet. Opens the app."
+        } else {
+            "Nabiji: $steps steps of ${goal.steps} today, ${goal.percent(steps)} percent. Opens the app."
+        }
+        // Glance's default text colour is a flat black and its progress indicator a flat purple —
+        // neither asks the theme anything, so on a dark widget background the numbers went to
+        // black on near-black. Every colour here is named against the theme instead.
+        val ink = GlanceTheme.colors.onSurface
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(GlanceTheme.colors.widgetBackground)
                 .padding(12.dp)
                 .clickable(actionStartActivity<MainActivity>())
-                // The whole widget is one tap target, and without this a screen reader announces
-                // the step count and then offers no clue that touching it does anything.
-                .semantics { contentDescription = "Nabiji: open the app" },
+                .semantics { contentDescription = spoken },
             verticalAlignment = Alignment.Vertical.CenterVertically,
             horizontalAlignment = Alignment.Horizontal.Start,
         ) {
             if (steps == null) {
                 // No permission or no Health Connect: say so instead of showing a fake zero.
-                Text("Nabiji", style = TextStyle(fontWeight = FontWeight.Bold))
-                Text("Tap to connect Health Connect", style = TextStyle(fontSize = 12.sp))
+                Text("Nabiji", style = TextStyle(color = ink, fontWeight = FontWeight.Bold))
+                Text("Tap to connect Health Connect", style = TextStyle(color = ink, fontSize = 12.sp))
                 return@Column
             }
-            Text("$steps", style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold))
-            Text("of ${goal.steps} steps", style = TextStyle(fontSize = 12.sp))
+            Text("$steps", style = TextStyle(color = ink, fontSize = 28.sp, fontWeight = FontWeight.Bold))
+            Text("of ${goal.steps} steps", style = TextStyle(color = ink, fontSize = 12.sp))
             LinearProgressIndicator(
                 progress = goal.progress(steps),
                 modifier = GlanceModifier.fillMaxWidth().padding(top = 6.dp),
+                color = GlanceTheme.colors.primary,
+                backgroundColor = GlanceTheme.colors.secondaryContainer,
             )
         }
     }
