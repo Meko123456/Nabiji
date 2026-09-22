@@ -83,14 +83,14 @@ jobs:
       # Every crash report from this build arrives as obfuscated class names. Without the mapping
       # kept alongside the release, those stack traces can never be read back.
       - name: Keep the R8 mapping (90 days)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mapping-${{ steps.v.outputs.name }}
           path: app/build/outputs/mapping/release/mapping.txt
           retention-days: 90
 
       - name: Keep the APK as an artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nabiji-${{ steps.v.outputs.name }}
           path: ${{ steps.apk.outputs.path }}
