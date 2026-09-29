@@ -21,15 +21,23 @@ daily activity.
 
 ## Screenshots
 
+<img src="docs/screenshots/dashboard-s24.png" width="320" alt="Nabiji's dashboard on a Galaxy S24 Ultra: 1738 steps today, 17 percent of a 10000 step goal; 21545 steps this week with a best day of 6101; and a 26-week heatmap that is green only for the last five weeks">
+
+The dashboard on a Galaxy S24 Ultra on 29 September 2026, reading what Samsung Health
+shares into Health Connect. The numbers are the phone's own, not a demo: 1738 steps by
+two in the afternoon, a week without a day at the goal, and a 26-week grid that turns
+green only in late August, because that is where this phone's step data in Health
+Connect begins. Today has no distance or calorie line under it because Samsung Health
+wrote neither to Health Connect that day, and the card shows what was recorded rather
+than an estimate.
+
 | Permission-first | Nothing recorded yet | The same, dark |
 | --- | --- | --- |
 | ![Nabiji asking to be allowed to read steps in Health Connect](docs/screenshots/permission.png) | ![Nabiji explaining that Health Connect holds no steps for the last year](docs/screenshots/empty-light.png) | ![The same screen rendered in dark mode](docs/screenshots/empty-dark.png) |
 
-These are from an Android 17 (API 37) emulator whose Health Connect is empty, so they
-are the app with nothing to show rather than a dashboard filled in for the photograph:
-it asks for permission, and then says plainly what it found. The populated dashboard —
-the progress bar, the streak, the 26-week heatmap — needs a phone with Samsung Health
-sharing into Health Connect, and is still to come.
+These three are from an emulator whose Health Connect is empty, so they are the app
+with nothing to show: it asks for permission, and then says plainly what it found.
+Between them that is most of what a new user meets before the first steps arrive.
 
 ## Features
 
