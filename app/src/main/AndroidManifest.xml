@@ -5,7 +5,7 @@
          Health Connect itself; nothing is read until they do. -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
-    <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
 
     <!-- Lets the app show up in Health Connect's list of connected apps (Android 13 and below). -->
     <queries>

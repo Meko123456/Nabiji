@@ -63,7 +63,7 @@ every number on the dashboard — streaks, averages, progress — is testable wi
 
 - Health Connect is **part of the framework from Android 14**; below that it is a separate app,
   so the UI has an "unavailable" state rather than assuming it is there.
-- Permissions (`READ_STEPS`, `READ_DISTANCE`, `READ_TOTAL_CALORIES_BURNED`) are granted inside
+- Permissions (`READ_STEPS`, `READ_DISTANCE`, `READ_ACTIVE_CALORIES_BURNED`) are granted inside
   Health Connect itself, not with a normal runtime dialog.
 
 ## Building

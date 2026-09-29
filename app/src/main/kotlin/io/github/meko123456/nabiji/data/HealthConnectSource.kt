@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.aggregate.AggregationResultGroupedByPeriod
 import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.StepsRecord
-import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import io.github.meko123456.nabiji.domain.ActivitySource
@@ -58,7 +58,9 @@ class HealthConnectSource(
                     metrics = setOf(
                         StepsRecord.COUNT_TOTAL,
                         DistanceRecord.DISTANCE_TOTAL,
-                        TotalCaloriesBurnedRecord.ENERGY_TOTAL,
+                        // Active, not total: total calories include the energy a body burns at
+                        // rest, so by lunchtime they read 1 500 kcal after 1 700 steps.
+                        ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL,
                     ),
                     // Local date-times: the user's midnight, not UTC's.
                     timeRangeFilter = TimeRangeFilter.between(
@@ -75,7 +77,7 @@ class HealthConnectSource(
         date = startTime.toLocalDate(),
         steps = result[StepsRecord.COUNT_TOTAL] ?: 0L,
         distanceMeters = result[DistanceRecord.DISTANCE_TOTAL]?.inMeters,
-        activeKilocalories = result[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories,
+        activeKilocalories = result[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.inKilocalories,
     )
 
     companion object {
@@ -83,7 +85,7 @@ class HealthConnectSource(
         val PERMISSIONS: Set<String> = setOf(
             HealthPermission.getReadPermission(StepsRecord::class),
             HealthPermission.getReadPermission(DistanceRecord::class),
-            HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
+            HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class),
         )
     }
 }
