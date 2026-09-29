@@ -17,6 +17,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -49,6 +50,7 @@ import io.github.meko123456.nabiji.data.HealthConnectSource
 import io.github.meko123456.nabiji.domain.ActivitySummary
 import io.github.meko123456.nabiji.domain.DayActivity
 import io.github.meko123456.nabiji.domain.HealthAvailability
+import io.github.meko123456.nabiji.domain.HistoryAccess
 import io.github.meko123456.nabiji.domain.StepGoal
 import io.github.meko123456.nabiji.ui.theme.isDark
 import java.time.LocalDate
@@ -137,7 +139,11 @@ fun DashboardScreen() {
                     body = s.message,
                     action = "Try again" to vm::refresh,
                 )
-                is DashboardState.Ready -> Ready(s, vm::setGoal)
+                is DashboardState.Ready -> Ready(
+                    s,
+                    onGoal = vm::setGoal,
+                    onAllowHistory = { permissionLauncher.launch(setOf(HealthConnectSource.HISTORY_PERMISSION)) },
+                )
             }
         }
     }
@@ -182,10 +188,10 @@ private fun Explain(title: String, body: String, action: Pair<String, () -> Unit
 }
 
 @Composable
-private fun Ready(state: DashboardState.Ready, onGoal: (Int) -> Unit) {
+private fun Ready(state: DashboardState.Ready, onGoal: (Int) -> Unit, onAllowHistory: () -> Unit) {
     TodayCard(state)
     StatsCard(state)
-    HeatmapCard(state.days, state.goal)
+    HeatmapCard(state.days, state.goal, state.history, onAllowHistory)
     GoalCard(state.goal, onGoal)
 }
 
@@ -275,7 +281,12 @@ private fun Stat(label: String, value: String) {
 
 /** A year of steps, drawn with my published heatmap library. */
 @Composable
-private fun HeatmapCard(days: List<DayActivity>, goal: StepGoal) {
+private fun HeatmapCard(
+    days: List<DayActivity>,
+    goal: StepGoal,
+    history: HistoryAccess,
+    onAllowHistory: () -> Unit,
+) {
     val counts = ActivitySummary.heatmapCounts(days)
     val endDay = LocalDate.now().toEpochDay()
     // The dashboard loads a year but the grid only draws 26 weeks of it, so everything said
@@ -316,6 +327,20 @@ private fun HeatmapCard(days: List<DayActivity>, goal: StepGoal) {
                 "$active of the last $shownDays days have steps · $met met the ${goal.steps} goal",
                 style = MaterialTheme.typography.bodySmall,
             )
+            // Health Connect shows an app the 30 days before its first grant and nothing older,
+            // so anyone whose steps go back further than that saw most of the grid empty, and an
+            // empty square says "no steps that day". Say why, and offer the way round it.
+            if (history == HistoryAccess.GRANTABLE) {
+                Text(
+                    "Older squares may be empty only because Health Connect shows an app just " +
+                        "the 30 days before it was first allowed in.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(onClick = onAllowHistory, modifier = Modifier.heightIn(min = MinTouchTarget)) {
+                    Text("Allow older history")
+                }
+            }
         }
     }
 }

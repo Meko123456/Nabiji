@@ -65,6 +65,9 @@ every number on the dashboard — streaks, averages, progress — is testable wi
   so the UI has an "unavailable" state rather than assuming it is there.
 - Permissions (`READ_STEPS`, `READ_DISTANCE`, `READ_ACTIVE_CALORIES_BURNED`) are granted inside
   Health Connect itself, not with a normal runtime dialog.
+- Health Connect shows an app only the **30 days before its first grant** unless it also holds
+  `READ_HEALTH_DATA_HISTORY`. That one is optional: without it the heatmap is shorter, so it is
+  offered from the heatmap card, where Health Connect supports it, rather than asked for up front.
 
 ## Building
 

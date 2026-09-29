@@ -8,6 +8,7 @@ import io.github.meko123456.nabiji.data.GoalRepository
 import io.github.meko123456.nabiji.domain.ActivitySource
 import io.github.meko123456.nabiji.domain.DayActivity
 import io.github.meko123456.nabiji.domain.HealthAvailability
+import io.github.meko123456.nabiji.domain.HistoryAccess
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,6 +48,7 @@ class DashboardViewModelTest {
         private val granted: Boolean = true,
         private val days: List<DayActivity> = emptyList(),
         private val failure: Throwable? = null,
+        private val history: HistoryAccess = HistoryAccess.GRANTED,
     ) : ActivitySource {
         /** How many times a year of activity has been asked for. The point of the slider tests. */
         var queries = 0
@@ -54,6 +56,7 @@ class DashboardViewModelTest {
 
         override fun availability() = availability
         override suspend fun hasPermissions() = granted
+        override suspend fun history() = history
         override suspend fun dailyActivity(from: LocalDate, to: LocalDate): Result<List<DayActivity>> {
             queries++
             return failure?.let { Result.failure(it) } ?: Result.success(days)
@@ -199,6 +202,27 @@ class DashboardViewModelTest {
         assertEquals(12_000L, ready.bestDay?.steps)
         assertEquals(2, ready.daysMeetingGoal)
         assertEquals(10_000, ready.goal.steps)
+    }
+
+    @Test
+    fun `a dashboard limited to 30 days says so, and still does after the goal moves`() = runTest(dispatcher) {
+        // The offer to read older history lives on the heatmap, so it has to survive the goal
+        // slider rebuilding the ready state, which happens on every drag.
+        val vm = vm(FakeSource(days = listOf(DayActivity(today, 12_000)), history = HistoryAccess.GRANTABLE))
+        advanceUntilIdle()
+        assertEquals(HistoryAccess.GRANTABLE, (vm.state.value as DashboardState.Ready).history)
+
+        vm.setGoal(8_000)
+        advanceUntilIdle()
+        assertEquals(HistoryAccess.GRANTABLE, (vm.state.value as DashboardState.Ready).history)
+    }
+
+    @Test
+    fun `a missing history permission does not hold the dashboard back`() = runTest(dispatcher) {
+        // History is an extra, not a requirement: without it the heatmap is shorter, nothing more.
+        val vm = vm(FakeSource(days = listOf(DayActivity(today, 12_000)), history = HistoryAccess.UNSUPPORTED))
+        advanceUntilIdle()
+        assertEquals(HistoryAccess.UNSUPPORTED, (vm.state.value as DashboardState.Ready).history)
     }
 
     @Test

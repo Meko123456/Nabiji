@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
+    <!-- Without this Health Connect shows only the 30 days before the first grant, and the
+         heatmap draws 26 weeks. Asked for from the heatmap, not up front. -->
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
 
     <!-- Lets the app show up in Health Connect's list of connected apps (Android 13 and below). -->
     <queries>

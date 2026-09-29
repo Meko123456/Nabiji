@@ -2,6 +2,7 @@ package io.github.meko123456.nabiji.data
 
 import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.HealthConnectFeatures
 import androidx.health.connect.client.aggregate.AggregationResultGroupedByPeriod
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
@@ -12,6 +13,7 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import io.github.meko123456.nabiji.domain.ActivitySource
 import io.github.meko123456.nabiji.domain.DayActivity
 import io.github.meko123456.nabiji.domain.HealthAvailability
+import io.github.meko123456.nabiji.domain.HistoryAccess
 import java.time.LocalDate
 import java.time.Period
 import kotlinx.coroutines.CoroutineDispatcher
@@ -48,6 +50,18 @@ class HealthConnectSource(
         val client = client ?: return@withContext false
         runCatching { client.permissionController.getGrantedPermissions().containsAll(PERMISSIONS) }
             .getOrDefault(false)
+    }
+
+    override suspend fun history(): HistoryAccess = withContext(io) {
+        val client = client ?: return@withContext HistoryAccess.UNSUPPORTED
+        runCatching {
+            when {
+                client.features.getFeatureStatus(HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_HISTORY) !=
+                    HealthConnectFeatures.FEATURE_STATUS_AVAILABLE -> HistoryAccess.UNSUPPORTED
+                HISTORY_PERMISSION in client.permissionController.getGrantedPermissions() -> HistoryAccess.GRANTED
+                else -> HistoryAccess.GRANTABLE
+            }
+        }.getOrDefault(HistoryAccess.UNSUPPORTED)
     }
 
     override suspend fun dailyActivity(from: LocalDate, to: LocalDate): Result<List<DayActivity>> =
@@ -87,5 +101,11 @@ class HealthConnectSource(
             HealthPermission.getReadPermission(DistanceRecord::class),
             HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class),
         )
+
+        /**
+         * Days older than the 30 before the first grant. Not in [PERMISSIONS]: the dashboard works
+         * without it, only with a shorter heatmap, so it is offered from there instead.
+         */
+        const val HISTORY_PERMISSION = HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
     }
 }

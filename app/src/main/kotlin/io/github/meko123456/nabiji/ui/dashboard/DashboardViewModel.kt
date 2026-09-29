@@ -7,6 +7,7 @@ import io.github.meko123456.nabiji.domain.ActivitySource
 import io.github.meko123456.nabiji.domain.ActivitySummary
 import io.github.meko123456.nabiji.domain.DayActivity
 import io.github.meko123456.nabiji.domain.HealthAvailability
+import io.github.meko123456.nabiji.domain.HistoryAccess
 import io.github.meko123456.nabiji.domain.StepGoal
 import java.time.LocalDate
 import kotlinx.coroutines.Job
@@ -39,6 +40,8 @@ sealed interface DashboardState {
         val weekAverage: Long,
         val bestDay: DayActivity?,
         val daysMeetingGoal: Int,
+        /** Whether [days] reaches back past the 30 days Health Connect allows by default. */
+        val history: HistoryAccess,
     ) : DashboardState
 
     data class Failed(val message: String) : DashboardState
@@ -82,10 +85,11 @@ class DashboardViewModel(
                 return@launch
             }
             val goal = goals.goal.first()
+            val history = source.history()
             val end = today()
             val start = end.minusDays(HISTORY_DAYS - 1)
             source.dailyActivity(start, end)
-                .onSuccess { days -> _state.update { buildReady(days, goal, end) } }
+                .onSuccess { days -> _state.update { buildReady(days, goal, end, history) } }
                 .onFailure { error ->
                     _state.update { DashboardState.Failed(error.message ?: "Couldn't read your activity.") }
                 }
@@ -118,12 +122,17 @@ class DashboardViewModel(
 
     /** Re-derive the goal-dependent numbers from the days already loaded. */
     private fun DashboardState.withGoal(goal: StepGoal): DashboardState = when (this) {
-        is DashboardState.Ready -> buildReady(days, goal, today())
+        is DashboardState.Ready -> buildReady(days, goal, today(), history)
         is DashboardState.NoData -> DashboardState.NoData(goal)
         else -> this
     }
 
-    private fun buildReady(days: List<DayActivity>, goal: StepGoal, end: LocalDate): DashboardState {
+    private fun buildReady(
+        days: List<DayActivity>,
+        goal: StepGoal,
+        end: LocalDate,
+        history: HistoryAccess,
+    ): DashboardState {
         if (days.none { it.steps > 0 }) return DashboardState.NoData(goal)
         val week = ActivitySummary.fillMissingDays(days, end, WEEK_DAYS)
         val todayActivity = days.firstOrNull { it.date == end } ?: DayActivity(end, 0L)
@@ -136,6 +145,7 @@ class DashboardViewModel(
             weekAverage = ActivitySummary.averageSteps(week),
             bestDay = ActivitySummary.bestDay(week),
             daysMeetingGoal = ActivitySummary.daysMeetingGoal(week, goal),
+            history = history,
         )
     }
 
