@@ -327,7 +327,7 @@ private fun GoalCard(goal: StepGoal, onGoal: (Int) -> Unit) {
     // through was committed: a single drag across the track raised ~29 separate goal changes.
     // Keyed on the goal so a change from anywhere else still moves the thumb.
     var position by remember(goal) { mutableFloatStateOf(goal.steps.toFloat()) }
-    val shown = StepGoal.clamped(position.toInt())
+    val shown = StepGoal.fromSlider(position)
 
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -338,7 +338,7 @@ private fun GoalCard(goal: StepGoal, onGoal: (Int) -> Unit) {
             Slider(
                 value = position,
                 onValueChange = { position = it },
-                onValueChangeFinished = { onGoal(position.toInt()) },
+                onValueChangeFinished = { onGoal(StepGoal.fromSlider(position).steps) },
                 valueRange = StepGoal.MIN.toFloat()..StepGoal.MAX.toFloat(),
                 steps = 28,
                 modifier = Modifier.semantics {

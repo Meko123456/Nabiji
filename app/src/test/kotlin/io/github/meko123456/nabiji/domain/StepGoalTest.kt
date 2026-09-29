@@ -1,5 +1,7 @@
 package io.github.meko123456.nabiji.domain
 
+import kotlin.math.nextDown
+import kotlin.math.nextUp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -51,5 +53,16 @@ class StepGoalTest {
         assertEquals(StepGoal.MAX, StepGoal.clamped(999_999).steps)
         assertEquals(7_500, StepGoal.clamped(7_500).steps)
         assertEquals(10_000, StepGoal.DEFAULT.steps)
+    }
+
+    @Test
+    fun `a slider position a float's width off a notch still lands on it`() {
+        // The slider snaps in float arithmetic, so the 10 000 notch can arrive as the float just
+        // below it. Truncated, that was a saved goal of 9 999.
+        assertEquals(10_000, StepGoal.fromSlider(10_000f.nextDown()).steps)
+        for (notch in StepGoal.MIN..StepGoal.MAX step 1_000) {
+            assertEquals(notch, StepGoal.fromSlider(notch.toFloat().nextDown()).steps)
+            assertEquals(notch, StepGoal.fromSlider(notch.toFloat().nextUp()).steps)
+        }
     }
 }

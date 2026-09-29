@@ -1,5 +1,7 @@
 package io.github.meko123456.nabiji.domain
 
+import kotlin.math.roundToInt
+
 /**
  * The daily step target and the arithmetic around it. A goal is always positive; the widely
  * quoted 10 000 is the default, but it is only a default — the user sets their own.
@@ -29,5 +31,12 @@ value class StepGoal(val steps: Int) {
 
         /** Clamps a user-entered goal into a sane range instead of rejecting it. */
         fun clamped(steps: Int): StepGoal = StepGoal(steps.coerceIn(MIN, MAX))
+
+        /**
+         * The goal a slider position stands for. The slider snaps to whole thousands, but it
+         * snaps in float arithmetic, so the 10 000 notch can arrive as 9 999.999 — and
+         * truncating that saved a goal of 9 999. Rounding lands on the notch either way.
+         */
+        fun fromSlider(position: Float): StepGoal = clamped(position.roundToInt())
     }
 }
