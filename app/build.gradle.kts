@@ -83,6 +83,11 @@ dependencies {
     implementation(libs.health.connect.client)
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
+    // Nabiji schedules nothing itself; Glance runs its widget sessions on WorkManager, and asks for
+    // 2.7.1, which brings Room 2.2.5. Under R8 full mode that Room's keep rules no longer hold the
+    // constructor it reaches for by reflection, so the minified app died in startup creating
+    // WorkDatabase. Asking for a current WorkManager lifts both, and matches the rest of the fleet.
+    implementation(libs.androidx.work.runtime)
     // My own published library — the daily-activity heatmap on the dashboard.
     implementation(libs.heatmap)
 
