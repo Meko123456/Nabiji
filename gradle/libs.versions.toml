@@ -3,13 +3,13 @@ agp = "9.4.1"
 kotlin = "2.4.20"
 composeBom = "2026.09.00"
 activityCompose = "1.13.0"
-lifecycle = "2.10.0"
-datastore = "1.2.0"
+lifecycle = "2.11.0"
+datastore = "1.2.1"
 healthConnect = "1.1.0"
-glance = "1.1.1"
+glance = "1.2.0"
 heatmap = "0.2.0"
 junit = "4.13.2"
-coroutinesTest = "1.10.2"
+coroutinesTest = "1.11.0"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
