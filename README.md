@@ -49,7 +49,9 @@ Between them that is most of what a new user meets before the first steps arrive
 - 📱 **Glance widget** — today's steps and progress on the home screen.
 - 🔐 **Permission-first** — reads nothing until you grant it in Health Connect, and degrades to a
   clear explanation when Health Connect is unavailable or permissions are refused.
-- 🔒 **Private** — data never leaves the device; the app has no network permission at all.
+- 🔒 **Private** — data never leaves the device: the app has no `INTERNET` permission. The only
+  network-adjacent one is `ACCESS_NETWORK_STATE`, which WorkManager (under Glance) declares to
+  read whether a network is up; it cannot send anything.
 - 🎨 **Material 3** — dynamic color, light/dark, edge-to-edge.
 - ♿ **Readable** — every control labelled and no smaller than 48dp, text that scales to
   200 % without losing a number, and nothing the app says only in colour.
