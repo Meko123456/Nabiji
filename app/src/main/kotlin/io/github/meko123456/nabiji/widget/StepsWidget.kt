@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalSize
 import androidx.glance.semantics.semantics
 import androidx.glance.semantics.contentDescription
 import androidx.glance.action.clickable
@@ -16,6 +17,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.LinearProgressIndicator
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.action.actionStartActivity
@@ -23,6 +25,7 @@ import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
+import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
@@ -45,6 +48,9 @@ import kotlinx.coroutines.flow.first
  * battery for numbers nobody is watching.
  */
 class StepsWidget : GlanceAppWidget() {
+
+    // Exact, so LocalSize is the widget's real size and a short widget can lay itself out to fit.
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val first = Reading.load(context)
@@ -113,7 +119,7 @@ class StepsWidget : GlanceAppWidget() {
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(GlanceTheme.colors.widgetBackground)
-                .padding(12.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
                 .clickable(actionStartActivity<MainActivity>())
                 .semantics { contentDescription = spoken },
             verticalAlignment = Alignment.Vertical.CenterVertically,
@@ -134,8 +140,29 @@ class StepsWidget : GlanceAppWidget() {
                     return@Column
                 }
             }
-            Text("$steps", style = TextStyle(color = ink, fontSize = 28.sp, fontWeight = FontWeight.Bold))
-            Text("of ${goal.steps} steps", style = TextStyle(color = ink, fontSize = 12.sp))
+            // A one-row widget (its default size) is about 67dp tall on a Pixel launcher, and the
+            // number above the goal above the bar needs about 85dp: the goal and the bar were cut
+            // off. Short widgets put the number and the goal on one line instead.
+            if (LocalSize.current.height < COMPACT_BELOW) {
+                // One line, at sizes that keep "12345 / 30000" inside a two-cell width (about
+                // 100dp after padding); "of" made it wrap.
+                Row(verticalAlignment = Alignment.Vertical.Bottom) {
+                    Text(
+                        "$steps",
+                        style = TextStyle(color = ink, fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                    )
+                    Text(
+                        " / ${goal.steps}",
+                        style = TextStyle(color = ink, fontSize = 11.sp),
+                        maxLines = 1,
+                        modifier = GlanceModifier.padding(bottom = 3.dp),
+                    )
+                }
+            } else {
+                Text("$steps", style = TextStyle(color = ink, fontSize = 28.sp, fontWeight = FontWeight.Bold))
+                Text("of ${goal.steps} steps", style = TextStyle(color = ink, fontSize = 12.sp))
+            }
             LinearProgressIndicator(
                 progress = goal.progress(steps),
                 modifier = GlanceModifier.fillMaxWidth().padding(top = 6.dp),
@@ -147,6 +174,9 @@ class StepsWidget : GlanceAppWidget() {
 
     companion object {
         val VERSION = intPreferencesKey("version")
+
+        /** Below this height the steps and the goal share a line. */
+        private val COMPACT_BELOW = 90.dp
 
         /** Re-render every placed widget from fresh numbers: the dashboard calls it once a new goal is stored. */
         suspend fun refresh(context: Context) {
