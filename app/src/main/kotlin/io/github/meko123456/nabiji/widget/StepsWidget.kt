@@ -53,6 +53,9 @@ class StepsWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // Here as well as in refresh: after a reboot, which clears alarms, the system's own update
+        // of the widget is the first chance to set it again.
+        MidnightRefresh.schedule(context)
         val first = Reading.load(context)
         provideContent {
             // Read here, again for every version refresh writes. While a widget's session is open
@@ -178,14 +181,19 @@ class StepsWidget : GlanceAppWidget() {
         /** Below this height the steps and the goal share a line. */
         private val COMPACT_BELOW = 90.dp
 
-        /** Re-render every placed widget from fresh numbers: the dashboard calls it once a new goal is stored. */
+        /**
+         * Re-render every placed widget from fresh numbers, and keep the midnight alarm set. Called
+         * after a new goal is stored, after each dashboard load, and at midnight.
+         */
         suspend fun refresh(context: Context) {
             runCatching {
                 val widget = StepsWidget()
-                GlanceAppWidgetManager(context).getGlanceIds(StepsWidget::class.java).forEach { id ->
+                val ids = GlanceAppWidgetManager(context).getGlanceIds(StepsWidget::class.java)
+                ids.forEach { id ->
                     updateAppWidgetState(context, id) { it[VERSION] = (it[VERSION] ?: 0) + 1 }
                     widget.update(context, id)
                 }
+                if (ids.isNotEmpty()) MidnightRefresh.schedule(context)
             }
         }
     }
@@ -194,4 +202,9 @@ class StepsWidget : GlanceAppWidget() {
 /** Receiver the launcher talks to. */
 class StepsWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = StepsWidget()
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        MidnightRefresh.cancel(context)
+    }
 }

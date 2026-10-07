@@ -50,6 +50,10 @@
         </activity-alias>
 
         <receiver
+            android:name=".widget.MidnightRefreshReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".widget.StepsWidgetReceiver"
             android:exported="true"
             android:label="@string/app_name">
