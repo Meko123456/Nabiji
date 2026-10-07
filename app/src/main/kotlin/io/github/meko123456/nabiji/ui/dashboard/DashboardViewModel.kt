@@ -54,6 +54,8 @@ sealed interface DashboardState {
 class DashboardViewModel(
     private val source: ActivitySource,
     private val goals: GoalRepository,
+    /** Called once the goal the user settled on is stored, so the home-screen widget can redraw. */
+    private val onGoalSaved: suspend () -> Unit = {},
     private val today: () -> LocalDate = LocalDate::now,
 ) : ViewModel() {
 
@@ -117,7 +119,10 @@ class DashboardViewModel(
         _state.update { it.withGoal(goal) }
         // Supersede rather than queue: only the value the user settled on needs to reach the store.
         goalWriteJob?.cancel()
-        goalWriteJob = viewModelScope.launch { goals.setGoal(goal) }
+        goalWriteJob = viewModelScope.launch {
+            goals.setGoal(goal)
+            onGoalSaved()
+        }
     }
 
     /** Re-derive the goal-dependent numbers from the days already loaded. */

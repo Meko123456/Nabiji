@@ -63,8 +63,11 @@ class DashboardViewModelTest {
         }
     }
 
-    private fun vm(source: ActivitySource, goals: GoalRepository = GoalRepository(FakeStore())) =
-        DashboardViewModel(source, goals) { today }
+    private fun vm(
+        source: ActivitySource,
+        goals: GoalRepository = GoalRepository(FakeStore()),
+        onGoalSaved: suspend () -> Unit = {},
+    ) = DashboardViewModel(source, goals, onGoalSaved) { today }
 
     @Before fun setUp() = Dispatchers.setMain(dispatcher)
     @After fun tearDown() = Dispatchers.resetMain()
@@ -107,6 +110,21 @@ class DashboardViewModelTest {
         advanceUntilIdle()
 
         assertEquals(7_500, goals.goal.first().steps)
+    }
+
+    @Test
+    fun `the widget is told once, after the goal the drag ended on is stored`() = runTest(dispatcher) {
+        // The home-screen widget showed the old goal until its next scheduled update, because
+        // nothing told it the goal had changed.
+        val goals = GoalRepository(FakeStore())
+        val stored = mutableListOf<Int>()
+        val vm = vm(FakeSource(days = listOf(DayActivity(today, 12_000))), goals) { stored += goals.goal.first().steps }
+        advanceUntilIdle()
+
+        listOf(4_000, 15_000, 7_500).forEach(vm::setGoal)
+        advanceUntilIdle()
+
+        assertEquals("once, with the settled goal already in the store", listOf(7_500), stored)
     }
 
     @Test

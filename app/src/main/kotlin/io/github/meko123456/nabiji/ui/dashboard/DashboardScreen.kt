@@ -53,6 +53,7 @@ import io.github.meko123456.nabiji.domain.HealthAvailability
 import io.github.meko123456.nabiji.domain.HistoryAccess
 import io.github.meko123456.nabiji.domain.StepGoal
 import io.github.meko123456.nabiji.ui.theme.isDark
+import io.github.meko123456.nabiji.widget.StepsWidget
 import java.time.LocalDate
 
 /** Weeks the heatmap draws. Everything said *about* the heatmap has to agree with this. */
@@ -72,7 +73,13 @@ private val MinTouchTarget = 48.dp
 fun DashboardScreen() {
     val context = LocalContext.current
     val vm: DashboardViewModel = viewModel {
-        DashboardViewModel(HealthConnectSource(context), GoalRepository(context))
+        // The application context: the ViewModel, and so this callback, outlives the Activity.
+        val app = context.applicationContext
+        DashboardViewModel(
+            HealthConnectSource(context),
+            GoalRepository(context),
+            onGoalSaved = { StepsWidget.refresh(app) },
+        )
     }
     val state by vm.state.collectAsStateWithLifecycle()
 
