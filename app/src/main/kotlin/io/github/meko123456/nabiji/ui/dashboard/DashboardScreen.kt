@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,6 +40,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -91,6 +93,18 @@ fun DashboardScreen() {
     val loadedDays = (state as? DashboardState.Ready)?.days
     LaunchedEffect(loadedDays) {
         if (loadedDays != null) StepsWidget.refresh(context.applicationContext)
+    }
+
+    // Offered only while a steps widget is on the home screen and Health Connect has not yet let
+    // Nabiji read in the background. Without that the widget's own updates are refused, and
+    // between visits to the app it can only say "Tap to update". Checked again after every load,
+    // so the offer goes once it is granted.
+    val offerBackground by produceState(false, state) {
+        val app = context.applicationContext
+        value = state is DashboardState.Ready &&
+            runCatching { GlanceAppWidgetManager(app).getGlanceIds(StepsWidget::class.java).isNotEmpty() }
+                .getOrDefault(false) &&
+            HealthConnectSource(app).canAskForBackground()
     }
 
     // Health Connect grants its reads in its own UI, not with a normal runtime dialog.
@@ -160,6 +174,11 @@ fun DashboardScreen() {
                     s,
                     onGoal = vm::setGoal,
                     onAllowHistory = { permissionLauncher.launch(setOf(HealthConnectSource.HISTORY_PERMISSION)) },
+                    onAllowBackground = if (offerBackground) {
+                        { permissionLauncher.launch(setOf(HealthConnectSource.BACKGROUND_PERMISSION)) }
+                    } else {
+                        null
+                    },
                 )
             }
         }
@@ -205,11 +224,36 @@ private fun Explain(title: String, body: String, action: Pair<String, () -> Unit
 }
 
 @Composable
-private fun Ready(state: DashboardState.Ready, onGoal: (Int) -> Unit, onAllowHistory: () -> Unit) {
+private fun Ready(
+    state: DashboardState.Ready,
+    onGoal: (Int) -> Unit,
+    onAllowHistory: () -> Unit,
+    onAllowBackground: (() -> Unit)?,
+) {
     TodayCard(state)
     StatsCard(state)
     HeatmapCard(state.days, state.goal, state.history, onAllowHistory)
     GoalCard(state.goal, onGoal)
+    if (onAllowBackground != null) WidgetCard(onAllowBackground)
+}
+
+@Composable
+private fun WidgetCard(onAllow: () -> Unit) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            SectionTitle("Home-screen widget")
+            Text(
+                "Health Connect lets the widget read your steps only while Nabiji is open, so in " +
+                    "between it can only say \"Tap to update\". Allow background access and it " +
+                    "keeps itself current.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(onClick = onAllow, modifier = Modifier.heightIn(min = MinTouchTarget)) {
+                Text("Allow background access")
+            }
+        }
+    }
 }
 
 @Composable

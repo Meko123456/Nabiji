@@ -9,6 +9,7 @@
     <!-- Without this Health Connect shows only the 30 days before the first grant, and the
          heatmap draws 26 weeks. Asked for from the heatmap, not up front. -->
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
 
     <!-- Lets the app show up in Health Connect's list of connected apps (Android 13 and below). -->
     <queries>

@@ -64,6 +64,20 @@ class HealthConnectSource(
         }.getOrDefault(HistoryAccess.UNSUPPORTED)
     }
 
+    /**
+     * Whether Nabiji could ask to read steps while it is closed, and has not been allowed yet.
+     * Only the widget needs it: the dashboard reads in the foreground, where Health Connect always
+     * answers, but the widget's own updates run in the background, where it refuses without it.
+     */
+    suspend fun canAskForBackground(): Boolean = withContext(io) {
+        val client = client ?: return@withContext false
+        runCatching {
+            client.features.getFeatureStatus(HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_IN_BACKGROUND) ==
+                HealthConnectFeatures.FEATURE_STATUS_AVAILABLE &&
+                BACKGROUND_PERMISSION !in client.permissionController.getGrantedPermissions()
+        }.getOrDefault(false)
+    }
+
     override suspend fun dailyActivity(from: LocalDate, to: LocalDate): Result<List<DayActivity>> =
         withContext(io) {
             val client = client ?: return@withContext Result.failure(IllegalStateException("Health Connect unavailable"))
@@ -107,5 +121,8 @@ class HealthConnectSource(
          * without it, only with a shorter heatmap, so it is offered from there instead.
          */
         const val HISTORY_PERMISSION = HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
+
+        /** Lets the widget read today's steps while the app is closed; offered once a widget is placed. */
+        const val BACKGROUND_PERMISSION = HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
     }
 }
