@@ -23,6 +23,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -82,6 +83,15 @@ fun DashboardScreen() {
         )
     }
     val state by vm.state.collectAsStateWithLifecycle()
+
+    // Each fresh load also redraws the widget. The dashboard reads Health Connect in the
+    // foreground, where Health Connect always answers; the widget's own updates run in the
+    // background, where it can refuse. So opening the app, which a tap on the widget does,
+    // brings the widget's steps up to date.
+    val loadedDays = (state as? DashboardState.Ready)?.days
+    LaunchedEffect(loadedDays) {
+        if (loadedDays != null) StepsWidget.refresh(context.applicationContext)
+    }
 
     // Health Connect grants its reads in its own UI, not with a normal runtime dialog.
     val permissionLauncher = rememberLauncherForActivityResult(

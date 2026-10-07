@@ -60,33 +60,50 @@ class StepsWidget : GlanceAppWidget() {
         }
     }
 
-    /** Today's steps (null without Health Connect or its permission) and the goal. */
-    private data class Reading(val steps: Long?, val goal: StepGoal) {
+    /** Today's steps and the goal. */
+    private data class Reading(val steps: Steps, val goal: StepGoal) {
         companion object {
             suspend fun load(context: Context): Reading {
                 val goal = GoalRepository(context).goal.first()
                 val source = HealthConnectSource(context)
                 val today = LocalDate.now()
                 val steps = if (source.availability() != HealthAvailability.AVAILABLE || !source.hasPermissions()) {
-                    null
+                    Steps.NotConnected
                 } else {
-                    source.dailyActivity(today, today).getOrNull()?.firstOrNull { it.date == today }?.steps ?: 0L
+                    source.dailyActivity(today, today).fold(
+                        onSuccess = { days -> Steps.Count(days.firstOrNull { it.date == today }?.steps ?: 0L) },
+                        // Not 0: Health Connect refused, and the steps are unknown. It refuses a
+                        // widget update the app makes from the background unless the app holds
+                        // the background permission, which drew a false "0 steps".
+                        onFailure = { Steps.Unread },
+                    )
                 }
                 return Reading(steps, goal)
             }
         }
     }
 
+    private sealed interface Steps {
+        /** No Health Connect, or no permission to read steps. */
+        data object NotConnected : Steps
+
+        /** Connected, but this read was refused or failed. */
+        data object Unread : Steps
+
+        data class Count(val value: Long) : Steps
+    }
+
     @androidx.compose.runtime.Composable
-    private fun WidgetBody(steps: Long?, goal: StepGoal) {
+    private fun WidgetBody(reading: Steps, goal: StepGoal) {
         // A description on the container is what a screen reader reads *instead of* the children,
         // so it has to carry the numbers as well as the fact that the widget is a button. The
         // first attempt at labelling the tap target said only "Nabiji: open the app", which
         // bought the label at the cost of the step count it was wrapped around.
-        val spoken = if (steps == null) {
-            "Nabiji: not connected to Health Connect yet. Opens the app."
-        } else {
-            "Nabiji: $steps steps of ${goal.steps} today, ${goal.percent(steps)} percent. Opens the app."
+        val spoken = when (reading) {
+            Steps.NotConnected -> "Nabiji: not connected to Health Connect yet. Opens the app."
+            Steps.Unread -> "Nabiji: today's steps could not be read here. Opens the app to update them."
+            is Steps.Count ->
+                "Nabiji: ${reading.value} steps of ${goal.steps} today, ${goal.percent(reading.value)} percent. Opens the app."
         }
         // Glance's default text colour is a flat black and its progress indicator a flat purple —
         // neither asks the theme anything, so on a dark widget background the numbers went to
@@ -102,11 +119,20 @@ class StepsWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.Vertical.CenterVertically,
             horizontalAlignment = Alignment.Horizontal.Start,
         ) {
-            if (steps == null) {
-                // No permission or no Health Connect: say so instead of showing a fake zero.
-                Text("Nabiji", style = TextStyle(color = ink, fontWeight = FontWeight.Bold))
-                Text("Tap to connect Health Connect", style = TextStyle(color = ink, fontSize = 12.sp))
-                return@Column
+            val steps = when (reading) {
+                is Steps.Count -> reading.value
+                // No permission, no Health Connect, or a refused read: say so instead of showing
+                // a fake zero.
+                Steps.NotConnected -> {
+                    Text("Nabiji", style = TextStyle(color = ink, fontWeight = FontWeight.Bold))
+                    Text("Tap to connect Health Connect", style = TextStyle(color = ink, fontSize = 12.sp))
+                    return@Column
+                }
+                Steps.Unread -> {
+                    Text("Nabiji", style = TextStyle(color = ink, fontWeight = FontWeight.Bold))
+                    Text("Tap to update", style = TextStyle(color = ink, fontSize = 12.sp))
+                    return@Column
+                }
             }
             Text("$steps", style = TextStyle(color = ink, fontSize = 28.sp, fontWeight = FontWeight.Bold))
             Text("of ${goal.steps} steps", style = TextStyle(color = ink, fontSize = 12.sp))
