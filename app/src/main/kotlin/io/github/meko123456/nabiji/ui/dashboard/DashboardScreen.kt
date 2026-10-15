@@ -360,6 +360,8 @@ private fun HeatmapCard(
     val shownDays = HeatmapLayout.daysShown(endDay, HEATMAP_WEEKS)
     val active = HeatmapLayout.daysWithin(counts.keys, endDay, HEATMAP_WEEKS)
     val met = days.count { it.date.toEpochDay() >= firstDay && goal.isMet(it.steps) }
+    // A first day with steps is "1 of the last 182 days has", not "have".
+    val have = if (active == 1) "has" else "have"
 
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -374,7 +376,7 @@ private fun HeatmapCard(
                 // Which greens suit the card depends on the theme actually in use, which is
                 // not necessarily the system setting.
                 levelColors = if (MaterialTheme.colorScheme.isDark) GithubGreens else GithubLightGreens,
-                contentDescription = "Activity heatmap: $active of the last $shownDays days have " +
+                contentDescription = "Activity heatmap: $active of the last $shownDays days $have " +
                     "recorded steps, and $met of them met the ${goal.steps} step goal",
             )
             // Depth of green is the only thing the grid says, and depth of green is the one
@@ -386,7 +388,7 @@ private fun HeatmapCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "$active of the last $shownDays days have steps · $met met the ${goal.steps} goal",
+                "$active of the last $shownDays days $have steps · $met met the ${goal.steps} goal",
                 style = MaterialTheme.typography.bodySmall,
             )
             // Health Connect shows an app the 30 days before its first grant and nothing older,
