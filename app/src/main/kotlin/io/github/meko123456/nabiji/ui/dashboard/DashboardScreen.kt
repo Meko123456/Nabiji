@@ -55,6 +55,7 @@ import io.github.meko123456.nabiji.domain.DayActivity
 import io.github.meko123456.nabiji.domain.HealthAvailability
 import io.github.meko123456.nabiji.domain.HistoryAccess
 import io.github.meko123456.nabiji.domain.StepGoal
+import io.github.meko123456.nabiji.ui.stepCount
 import io.github.meko123456.nabiji.ui.theme.isDark
 import io.github.meko123456.nabiji.widget.StepsWidget
 import java.time.LocalDate
@@ -265,8 +266,8 @@ private fun TodayCard(state: DashboardState.Ready) {
     // shows. It used to stop after the streak, which quietly hid the distance, the calories and
     // how far there was left to go from anyone listening rather than looking.
     val spoken = buildList {
-        add("Today: $steps steps, ${goal.percent(steps)} percent of your ${goal.steps} step goal")
-        add(if (remaining == 0L) "goal met" else "$remaining steps to go")
+        add("Today: ${stepCount(steps)}, ${goal.percent(steps)} percent of your ${goal.steps} step goal")
+        add(if (remaining == 0L) "goal met" else "${stepCount(remaining)} to go")
         if (state.streak > 0) add("${state.streak} day streak")
         state.today.distanceMeters?.let { add("%.2f kilometres".format(it / 1000)) }
         state.today.activeKilocalories?.let { add("${it.toInt()} kilocalories") }

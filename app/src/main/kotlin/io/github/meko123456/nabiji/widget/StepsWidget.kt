@@ -37,6 +37,7 @@ import io.github.meko123456.nabiji.data.GoalRepository
 import io.github.meko123456.nabiji.data.HealthConnectSource
 import io.github.meko123456.nabiji.domain.HealthAvailability
 import io.github.meko123456.nabiji.domain.StepGoal
+import io.github.meko123456.nabiji.ui.stepCount
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 
@@ -112,7 +113,7 @@ class StepsWidget : GlanceAppWidget() {
             Steps.NotConnected -> "Nabiji: not connected to Health Connect yet. Opens the app."
             Steps.Unread -> "Nabiji: today's steps could not be read here. Opens the app to update them."
             is Steps.Count ->
-                "Nabiji: ${reading.value} steps of ${goal.steps} today, ${goal.percent(reading.value)} percent. Opens the app."
+                "Nabiji: ${stepCount(reading.value)} of ${goal.steps} today, ${goal.percent(reading.value)} percent. Opens the app."
         }
         // Glance's default text colour is a flat black and its progress indicator a flat purple —
         // neither asks the theme anything, so on a dark widget background the numbers went to
