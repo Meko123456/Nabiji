@@ -85,7 +85,7 @@ every number on the dashboard — streaks, averages, progress — is testable wi
 ./gradlew :app:assembleDebug :app:testDebugUnitTest
 ```
 
-Kotlin 2.4.20, AGP 9.4.1, Gradle 9.8.0, Compose BOM 2026.09, minSdk 26, compileSdk and targetSdk 37,
+Kotlin 2.4.21, AGP 9.4.1, Gradle 9.8.0, Compose BOM 2026.09, minSdk 26, compileSdk and targetSdk 37,
 Health Connect client 1.1, Glance 1.1.
 
 ## Building a release
