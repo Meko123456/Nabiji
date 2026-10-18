@@ -49,9 +49,17 @@
             </intent-filter>
         </activity-alias>
 
+        <!-- The alarm is set for the instant of local midnight. A new time zone or a changed clock
+             moves midnight away from that instant, so these redraw the widget and set it again;
+             the system delivers both to a receiver that is not exported. -->
         <receiver
             android:name=".widget.MidnightRefreshReceiver"
-            android:exported="false" />
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".widget.StepsWidgetReceiver"

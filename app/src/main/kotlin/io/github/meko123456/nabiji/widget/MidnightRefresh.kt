@@ -47,6 +47,11 @@ object MidnightRefresh {
 }
 
 /** Fired by [MidnightRefresh]: redraw for the new day, which also sets the next alarm. */
+/**
+ * Fired by [MidnightRefresh] at midnight, and by the system when the time zone or the clock
+ * changes: redraw for the day it now is, which also sets the next alarm. The alarm alone kept the
+ * old zone's midnight, so after flying east the widget showed yesterday's steps for hours.
+ */
 class MidnightRefreshReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val pending = goAsync()
