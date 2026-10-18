@@ -2,15 +2,23 @@ package io.github.meko123456.nabiji.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import io.github.meko123456.nabiji.domain.StepGoal
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "nabiji")
+// A file that won't parse is replaced with empty preferences rather than thrown on every read. The
+// CorruptionException from `data` crashed the app at launch, every launch, until its storage was
+// cleared by hand.
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "nabiji",
+    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+)
 
 /**
  * The user's daily step goal. Reads are clamped through [StepGoal.clamped], so a corrupt or
