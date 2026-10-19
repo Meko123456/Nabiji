@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.semantics.semantics
 import androidx.glance.semantics.contentDescription
@@ -37,6 +38,7 @@ import io.github.meko123456.nabiji.data.GoalRepository
 import io.github.meko123456.nabiji.data.HealthConnectSource
 import io.github.meko123456.nabiji.domain.HealthAvailability
 import io.github.meko123456.nabiji.domain.StepGoal
+import io.github.meko123456.nabiji.ui.grouped
 import io.github.meko123456.nabiji.ui.stepCount
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
@@ -105,6 +107,7 @@ class StepsWidget : GlanceAppWidget() {
 
     @androidx.compose.runtime.Composable
     private fun WidgetBody(reading: Steps, goal: StepGoal) {
+        val locale = LocalContext.current.resources.configuration.locales[0]
         // A description on the container is what a screen reader reads *instead of* the children,
         // so it has to carry the numbers as well as the fact that the widget is a button. The
         // first attempt at labelling the tap target said only "Nabiji: open the app", which
@@ -113,7 +116,7 @@ class StepsWidget : GlanceAppWidget() {
             Steps.NotConnected -> "Nabiji: not connected to Health Connect yet. Opens the app."
             Steps.Unread -> "Nabiji: today's steps could not be read here. Opens the app to update them."
             is Steps.Count ->
-                "Nabiji: ${stepCount(reading.value)} of ${goal.steps} today, ${goal.percent(reading.value)} percent. Opens the app."
+                "Nabiji: ${stepCount(reading.value, locale)} of ${goal.steps.grouped(locale)} today, ${goal.percent(reading.value)} percent. Opens the app."
         }
         // Glance's default text colour is a flat black and its progress indicator a flat purple —
         // neither asks the theme anything, so on a dark widget background the numbers went to
@@ -148,24 +151,25 @@ class StepsWidget : GlanceAppWidget() {
             // number above the goal above the bar needs about 85dp: the goal and the bar were cut
             // off. Short widgets put the number and the goal on one line instead.
             if (LocalSize.current.height < COMPACT_BELOW) {
-                // One line, at sizes that keep "12345 / 30000" inside a two-cell width (about
-                // 100dp after padding); "of" made it wrap.
+                // One line, at sizes that keep "12,345 / 30,000" inside a two-cell width (about
+                // 100dp after padding); "of" made it wrap, and the grouping marks cut the goal to
+                // "30,0…" at 20sp and 11sp.
                 Row(verticalAlignment = Alignment.Vertical.Bottom) {
                     Text(
-                        "$steps",
-                        style = TextStyle(color = ink, fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                        steps.grouped(locale),
+                        style = TextStyle(color = ink, fontSize = 18.sp, fontWeight = FontWeight.Bold),
                         maxLines = 1,
                     )
                     Text(
-                        " / ${goal.steps}",
-                        style = TextStyle(color = ink, fontSize = 11.sp),
+                        " / ${goal.steps.grouped(locale)}",
+                        style = TextStyle(color = ink, fontSize = 10.sp),
                         maxLines = 1,
                         modifier = GlanceModifier.padding(bottom = 3.dp),
                     )
                 }
             } else {
-                Text("$steps", style = TextStyle(color = ink, fontSize = 28.sp, fontWeight = FontWeight.Bold))
-                Text("of ${goal.steps} steps", style = TextStyle(color = ink, fontSize = 12.sp))
+                Text(steps.grouped(locale), style = TextStyle(color = ink, fontSize = 28.sp, fontWeight = FontWeight.Bold))
+                Text("of ${goal.steps.grouped(locale)} steps", style = TextStyle(color = ink, fontSize = 12.sp))
             }
             LinearProgressIndicator(
                 progress = goal.progress(steps),

@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
@@ -55,6 +56,7 @@ import io.github.meko123456.nabiji.domain.DayActivity
 import io.github.meko123456.nabiji.domain.HealthAvailability
 import io.github.meko123456.nabiji.domain.HistoryAccess
 import io.github.meko123456.nabiji.domain.StepGoal
+import io.github.meko123456.nabiji.ui.grouped
 import io.github.meko123456.nabiji.ui.stepCount
 import io.github.meko123456.nabiji.ui.theme.isDark
 import io.github.meko123456.nabiji.widget.StepsWidget
@@ -262,15 +264,16 @@ private fun TodayCard(state: DashboardState.Ready) {
     val steps = state.today.steps
     val goal = state.goal
     val remaining = goal.remaining(steps)
+    val locale = LocalConfiguration.current.locales[0]
     // The card is read out as one sentence, so the sentence has to carry everything the card
     // shows. It used to stop after the streak, which quietly hid the distance, the calories and
     // how far there was left to go from anyone listening rather than looking.
     val spoken = buildList {
-        add("Today: ${stepCount(steps)}, ${goal.percent(steps)} percent of your ${goal.steps} step goal")
-        add(if (remaining == 0L) "goal met" else "${stepCount(remaining)} to go")
+        add("Today: ${stepCount(steps, locale)}, ${goal.percent(steps)} percent of your ${goal.steps.grouped(locale)} step goal")
+        add(if (remaining == 0L) "goal met" else "${stepCount(remaining, locale)} to go")
         if (state.streak > 0) add("${state.streak} day streak")
         state.today.distanceMeters?.let { add("%.2f kilometres".format(it / 1000)) }
-        state.today.activeKilocalories?.let { add("${it.toInt()} kilocalories") }
+        state.today.activeKilocalories?.let { add("${it.toInt().grouped(locale)} kilocalories") }
     }.joinToString(", ")
 
     Card(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = spoken }) {
@@ -280,9 +283,9 @@ private fun TodayCard(state: DashboardState.Ready) {
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
             )
-            Text("$steps", style = MaterialTheme.typography.displayMedium)
+            Text(steps.grouped(locale), style = MaterialTheme.typography.displayMedium)
             Text(
-                "of ${goal.steps} steps · ${goal.percent(steps)}%",
+                "of ${goal.steps.grouped(locale)} steps · ${goal.percent(steps)}%",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -291,7 +294,7 @@ private fun TodayCard(state: DashboardState.Ready) {
                 modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
             )
             Text(
-                if (remaining == 0L) "Goal met 🎉" else "$remaining to go",
+                if (remaining == 0L) "Goal met 🎉" else "${remaining.grouped(locale)} to go",
                 style = MaterialTheme.typography.bodySmall,
             )
             if (state.streak > 0) {
@@ -301,7 +304,7 @@ private fun TodayCard(state: DashboardState.Ready) {
                 Text("%.2f km".format(it / 1000), style = MaterialTheme.typography.bodySmall)
             }
             state.today.activeKilocalories?.let {
-                Text("${it.toInt()} kcal", style = MaterialTheme.typography.bodySmall)
+                Text("${it.toInt().grouped(locale)} kcal", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -362,6 +365,7 @@ private fun HeatmapCard(
     val met = days.count { it.date.toEpochDay() >= firstDay && goal.isMet(it.steps) }
     // A first day with steps is "1 of the last 182 days has", not "have".
     val have = if (active == 1) "has" else "have"
+    val locale = LocalConfiguration.current.locales[0]
 
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -377,7 +381,7 @@ private fun HeatmapCard(
                 // not necessarily the system setting.
                 levelColors = if (MaterialTheme.colorScheme.isDark) GithubGreens else GithubLightGreens,
                 contentDescription = "Activity heatmap: $active of the last $shownDays days $have " +
-                    "recorded steps, and $met of them met the ${goal.steps} step goal",
+                    "recorded steps, and $met of them met the ${goal.steps.grouped(locale)} step goal",
             )
             // Depth of green is the only thing the grid says, and depth of green is the one
             // thing a red-green colour-blind reader cannot get back out of it. Say it in words
@@ -388,7 +392,7 @@ private fun HeatmapCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "$active of the last $shownDays days $have steps · $met met the ${goal.steps} goal",
+                "$active of the last $shownDays days $have steps · $met met the ${goal.steps.grouped(locale)} goal",
                 style = MaterialTheme.typography.bodySmall,
             )
             // Health Connect shows an app the 30 days before its first grant and nothing older,
@@ -417,13 +421,14 @@ private fun GoalCard(goal: StepGoal, onGoal: (Int) -> Unit) {
     // Keyed on the goal so a change from anywhere else still moves the thumb.
     var position by remember(goal) { mutableFloatStateOf(goal.steps.toFloat()) }
     val shown = StepGoal.fromSlider(position)
+    val locale = LocalConfiguration.current.locales[0]
 
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             SectionTitle("Daily goal")
             // The label follows the finger, so the drag still reads as live even though only the
             // value it lands on is committed.
-            Text("${shown.steps} steps", style = MaterialTheme.typography.bodyMedium)
+            Text("${shown.steps.grouped(locale)} steps", style = MaterialTheme.typography.bodyMedium)
             Slider(
                 value = position,
                 onValueChange = { position = it },
@@ -432,7 +437,7 @@ private fun GoalCard(goal: StepGoal, onGoal: (Int) -> Unit) {
                 steps = 28,
                 modifier = Modifier.semantics {
                     contentDescription = "Daily step goal"
-                    stateDescription = "${shown.steps} steps"
+                    stateDescription = "${shown.steps.grouped(locale)} steps"
                 },
             )
         }
