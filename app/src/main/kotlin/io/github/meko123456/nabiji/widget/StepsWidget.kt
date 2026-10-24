@@ -72,6 +72,16 @@ class StepsWidget : GlanceAppWidget() {
         }
     }
 
+    /**
+     * What the widget picker shows on Android 15 and later: the widget itself on a made-up day
+     * instead of the app icon in a box, drawn by [WidgetBody] so the two can't drift apart. Never
+     * the user's own steps, since a preview is shown to whoever opens the picker. [WidgetPreviews]
+     * hands it to the system.
+     */
+    override suspend fun providePreview(context: Context, widgetCategory: Int) {
+        provideContent { GlanceTheme { WidgetBody(Steps.Count(7_432), StepGoal(10_000)) } }
+    }
+
     /** Today's steps and the goal. */
     private data class Reading(val steps: Steps, val goal: StepGoal) {
         companion object {
