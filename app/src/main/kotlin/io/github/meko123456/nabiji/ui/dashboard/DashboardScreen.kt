@@ -26,8 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +44,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -110,10 +113,17 @@ fun DashboardScreen() {
             HealthConnectSource(app).canAskForBackground()
     }
 
-    // Health Connect grants its reads in its own UI, not with a normal runtime dialog.
+    // Health Connect grants its reads in its own UI, not with a normal runtime dialog. After two
+    // refusals it stops showing that UI and answers with nothing granted at once, so Grant looked
+    // dead. Once a request comes back short, the card sends the user to Health Connect's own
+    // permission screen instead, which works whether or not it has stopped asking.
+    var refused by rememberSaveable { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract(),
-    ) { vm.refresh() }
+    ) { granted ->
+        if (!granted.containsAll(HealthConnectSource.PERMISSIONS)) refused = true
+        vm.refresh()
+    }
 
     // The bar holds two stacked lines of text and nothing else, so its height is the height of
     // that text. Left at Material's fixed 64dp, a reader at 200 % font size had the Georgian
@@ -151,14 +161,24 @@ fun DashboardScreen() {
                                 "It is built into Android 14 and newer; on older versions install it from the Play Store."
                     },
                 )
-                DashboardState.NeedsPermission -> Explain(
-                    title = "Let Nabiji read your steps",
-                    body = "Nabiji never counts steps itself — it reads what Health Connect already holds. " +
-                        "Nothing leaves your device.",
-                    action = "Grant in Health Connect" to {
-                        permissionLauncher.launch(HealthConnectSource.PERMISSIONS)
-                    },
-                )
+                DashboardState.NeedsPermission -> if (refused) {
+                    Explain(
+                        title = "Let Nabiji read your steps",
+                        body = "Health Connect stops asking after two refusals. In Health Connect, open App " +
+                            "permissions, then Nabiji, and allow Steps, Distance and Active calories. Nothing " +
+                            "leaves your device.",
+                        action = "Open Health Connect" to { openHealthConnectSettings(context) },
+                    )
+                } else {
+                    Explain(
+                        title = "Let Nabiji read your steps",
+                        body = "Nabiji never counts steps itself — it reads what Health Connect already holds. " +
+                            "Nothing leaves your device.",
+                        action = "Grant in Health Connect" to {
+                            permissionLauncher.launch(HealthConnectSource.PERMISSIONS)
+                        },
+                    )
+                }
                 is DashboardState.NoData -> Explain(
                     title = "No activity recorded yet",
                     body = "Health Connect has no steps for the last year. That usually means the app that " +
@@ -441,5 +461,24 @@ private fun GoalCard(goal: StepGoal, onGoal: (Int) -> Unit) {
                 },
             )
         }
+    }
+}
+
+/**
+ * Opens Health Connect's own settings, where App permissions lists Nabiji. Its per-app permission
+ * screen (MANAGE_HEALTH_PERMISSIONS) needs GRANT_RUNTIME_PERMISSIONS, which only the system holds:
+ * opened from here it crashed the app. The app's settings page is the fallback if Health Connect's
+ * can't be opened, so the button never fails silently.
+ */
+private fun openHealthConnectSettings(context: android.content.Context) {
+    runCatching {
+        context.startActivity(android.content.Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
+    }.onFailure {
+        context.startActivity(
+            android.content.Intent(
+                android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                android.net.Uri.fromParts("package", context.packageName, null),
+            ),
+        )
     }
 }
