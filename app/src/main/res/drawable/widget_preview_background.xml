@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget's themed background, for the picker's preview layout, with the corners the
+     launcher rounds a placed widget to. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/widget_preview_background" />
+    <corners android:radius="16dp" />
+</shape>

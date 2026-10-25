@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What the widget picker shows on Android 12 to 14: the widget at its default one-row size, on
+     the made-up day StepsWidget.providePreview draws for Android 15 and later, 7,432 of 10,000
+     steps. Never the user's own steps. Without it the picker showed the app icon in a box.
+     The goal is 10sp because the widget's is: anything larger cut it short in two cells. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_preview_background"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="8dp"
+    tools:ignore="HardcodedText,SmallSp">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="bottom"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:text="7,432"
+            android:textColor="@color/widget_preview_on_surface"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:paddingBottom="3dp"
+            android:text=" / 10,000"
+            android:textColor="@color/widget_preview_on_surface"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <ProgressBar
+        style="@android:style/Widget.Material.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:max="100"
+        android:progress="74"
+        android:progressDrawable="@drawable/widget_preview_progress" />
+</LinearLayout>
